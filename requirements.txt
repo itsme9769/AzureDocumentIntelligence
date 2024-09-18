@@ -3,4 +3,5 @@ azure-storage-blob
 azure-core
 azure-ai-formrecognizer==3.3.3
 openpyxl
+gunicorn
 
