@@ -162,11 +162,16 @@ def upload():
         return redirect(url_for('success'))
     else:
         flash('Invalid file type. Only PDF files are allowed.')
-        return redirect(request.url)
+        #return redirect(request.url)
+        return redirect(url_for('failure'))
         
 @app.route('/success')
 def success():
     return render_template('success.html')
+
+@app.route('/failure')
+def failure():
+    return render_template('failure.html')
 
 if __name__ == '__main__':
     app.run(debug=True)

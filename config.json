@@ -2,5 +2,6 @@
     "endpoint": "https://pt-docment-intelligence.cognitiveservices.azure.com/",
     "key": "905e186b626e4b4f99d33bdfdd47b574",
     "connection_string": "DefaultEndpointsProtocol=https;AccountName=fgbotfilestorage;AccountKey=0uWNdfaZOEx4rgmWPbU/sL/TltQqG+L9zVfs5s7WPvKfUtgRjAjzVVHQ3UmFj6VOaEYrthyDEP9cJC3jafOuLQ==;EndpointSuffix=core.windows.net",
-    "container_name": "tamarind"
+    "container_name": "tamarind",
+    "loader":"https://fgbotfilestorage.blob.core.windows.net/tamarind/loading.gif"
 }
