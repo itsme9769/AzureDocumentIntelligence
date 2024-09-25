@@ -43,25 +43,30 @@ class AzureBlobStorageHandler:
         except Exception as ex:
             print(f"An error occurred while deleting blob: {ex}")
 
-    def upload_file_to_blob(self, file_path, folder_name="invoices"):
+    def upload_folder_to_blob(self, folder_path, folder_name="invoices"):
+        uploaded_files = []
         try:
-            blob_name = f"{folder_name}/{os.path.basename(file_path)}"
-            local_file = file_path
-            blob_client = self.blob_service_client.get_blob_client(container=self.container_name, blob=blob_name)
+            for root, dirs, files in os.walk(folder_path):
+                for file_name in files:
+                    file_path = os.path.join(root, file_name)
+                    blob_name = f"{folder_name}/{file_name}"
+                    blob_client = self.blob_service_client.get_blob_client(container=self.container_name, blob=blob_name)
 
-            with open(file_path, "rb") as data:
-                blob_client.upload_blob(data, overwrite=True)  # Overwrite the existing blob
+                    with open(file_path, "rb") as data:
+                        blob_client.upload_blob(data, overwrite=True)  # Overwrite existing blobs if they exist
+                    print(f"File {file_path} uploaded to {self.container_name}/{folder_name} successfully.")
+                    uploaded_files.append(file_path)
 
-            print(f"File {file_path} uploaded to {self.container_name}/{folder_name} successfully.")
-            return local_file
+            return uploaded_files
 
         except Exception as ex:
             print(f"An error occurred during upload: {ex}")
+            return None
 
     def AzureDocumentIntelligence(self, local_file):
         try:
             document_analysis_client = DocumentAnalysisClient(
-                endpoint=endpoint, credential=AzureKeyCredential("905e186b626e4b4f99d33bdfdd47b574")
+                endpoint=endpoint, credential=AzureKeyCredential(key)
             )
 
             with open(local_file, "rb") as file:
@@ -132,8 +137,7 @@ class AzureBlobStorageHandler:
             print(f"Excel file '{excel_file}' has been created successfully.")
         except Exception as ex:
             print(f"An error occurred while writing to Excel: {ex}")
-            return redirect(url_for('faiure'))
-        return excel_file
+            return redirect(url_for('failure'))
 
 azure_blob_handler = AzureBlobStorageHandler(connection_string, container_name)
 
@@ -141,40 +145,29 @@ azure_blob_handler = AzureBlobStorageHandler(connection_string, container_name)
 def index():
     return render_template('index.html')
 
-@app.route('/upload', methods=['POST'])
+@app.route('/upload', methods=['GET'])
 def upload():
-    if 'file' not in request.files:
-        flash('No file part')
+    folder_path = request.form.get('folder_path')
+    if not folder_path or not os.path.isdir(folder_path):
+        flash('Invalid folder path')
         return redirect(request.url)
-    file = request.files['file']
-    if file.filename == '':
-        flash('No selected file')
-        return redirect(request.url)
-    if file and file.filename.lower().endswith('.pdf'):
-        file_path = os.path.join(UPLOAD_FOLDER, file.filename)
-        file.save(file_path)
-        azure_blob_handler.delete_blob(file.filename)
-        local_file = azure_blob_handler.upload_file_to_blob(file_path)
-        key_value_pairs = azure_blob_handler.AzureDocumentIntelligence(local_file)
-        all_key_value_pairs = {file.filename: key_value_pairs}
-        excel_file = azure_blob_handler.write_to_excel(all_key_value_pairs)
-        return redirect(url_for('success'))
-    else:
-        flash('Invalid file type. Only PDF files are allowed.')
-        #return redirect(request.url)
-        return redirect(url_for('failure'))
-        
+
+    uploaded_files = azure_blob_handler.upload_folder_to_blob(folder_path)
+    all_key_value_pairs = {}
+
+    for file_path in uploaded_files:
+        if file_path.lower().endswith('.pdf'):
+            key_value_pairs = azure_blob_handler.AzureDocumentIntelligence(file_path)
+            all_key_value_pairs[os.path.basename(file_path)] = key_value_pairs
+
+    if all_key_value_pairs:
+        azure_blob_handler.write_to_excel(all_key_value_pairs)
+
+    return redirect(url_for('success'))
+
 @app.route('/success')
 def success():
     return render_template('success.html')
 
-@app.route('/failure')
-def failure():
-    return render_template('failure.html')
-
 if __name__ == '__main__':
     app.run(debug=True)
-    
-    
-
-    
