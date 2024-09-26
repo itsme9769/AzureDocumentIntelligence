@@ -8,7 +8,7 @@ import datetime
 import json
 from pathlib import Path
 from azure.core.exceptions import ResourceNotFoundError
-
+# ok
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
